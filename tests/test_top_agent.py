@@ -21,8 +21,10 @@ logger = get_logger(__name__)
 
 
 args_dict = {
-    "provider": "vertexanthropic",
-    "model": "claude-3-7-sonnet@20250219",
+    "provider": "openai",
+    "model": "gpt-5-mini",
+    # "provider": "vertexanthropic",
+    # "model": "claude-3-7-sonnet@20250219",
     # "model": "gemini-2.0-flash-001",
     # "model": "claude-3-7-sonnet-20250219",
     # "model": "gpt-4o-2024-08-06",
@@ -31,10 +33,10 @@ args_dict = {
     # "filter_instance": "^(.*)$",
     "type_benchmark": "verilog_eval_v2",
     "path_benchmark": "./verilog-eval",
-    "run_identifier": "your_run_identifier",
+    "run_identifier": "gpt5_mini_local_test",
     "n": 1,
-    "temperature": 0.85,
-    "top_p": 0.95,
+    "temperature": 1.0,
+    "top_p": 1.0,
     "max_token": 8192,
     "use_golden_tb_in_mage": True,
     "key_cfg_path": "./key.cfg",
