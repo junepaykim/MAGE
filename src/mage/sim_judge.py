@@ -127,7 +127,7 @@ class SimJudge:
         failed_sim_log: str,
         failed_rtl: str,
         failed_testbench: str,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         if isinstance(self.token_counter, TokenCounterCached):
             self.token_counter.set_enable_cache(False)
         self.history = []
