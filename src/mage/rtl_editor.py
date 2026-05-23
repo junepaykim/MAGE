@@ -400,6 +400,8 @@ class RTLEditor:
     def get_order_prompt_messages(self) -> List[ChatMessage]:
         with open(self.rtl_path, "r") as f:
             rtl_code = f.read()
+        
+        logger.info(f"----------> RTLEDITOR RECEIVED ROUTE: {self.repair_route}")
         route_prompt = ROUTE_REPAIR_PROMPTS[self.repair_route]
         return [
             ChatMessage(

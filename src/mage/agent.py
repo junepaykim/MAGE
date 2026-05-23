@@ -96,6 +96,7 @@ class TopAgent:
         )
         if not is_syntax_pass:
             return False, rtl_code
+
         self.write_output(rtl_code, "rtl.sv")
         logger.info("Initial rtl:")
         logger.info(rtl_code)
@@ -103,6 +104,8 @@ class TopAgent:
         tb_need_fix = True
         rtl_need_fix = True
         sim_log = ""
+        error_route = "generic"
+
         for i in range(self.sim_max_retry):
             # run simulation judge, overwrite is_sim_pass
             is_sim_pass, sim_mismatch_cnt, sim_log = self.sim_reviewer.review()
@@ -111,7 +114,8 @@ class TopAgent:
                 rtl_need_fix = False
                 break
             self.sim_judge.reset()
-            tb_need_fix = self.sim_judge.chat(spec, sim_log, rtl_code, testbench)
+            tb_need_fix, error_route = self.sim_judge.chat(spec, sim_log, rtl_code, testbench)
+            logger.info(f"DEBUG ERROR ROUTE: {error_route}")
             if tb_need_fix:
                 self.tb_gen.reset()
                 if i == 0:
@@ -199,6 +203,7 @@ class TopAgent:
                     output_dir_per_run=self.output_dir_per_run,
                     sim_failed_log=sim_log,
                     sim_mismatch_cnt=sim_mismatch_cnt,
+                    repair_route=error_route
                 )
                 if is_sim_pass:
                     rtl_need_fix = False

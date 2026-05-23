@@ -140,4 +140,5 @@ class SimJudge:
         self.history.extend(self.get_order_prompt_messages())
         response = self.generate(self.history)
         resp_obj = self.parse_output(response)
+        logger.info(f"JUDGE AGENT ERROR ROUTE = {resp_obj.error_route}")
         return resp_obj.tb_needs_fix, resp_obj.error_route

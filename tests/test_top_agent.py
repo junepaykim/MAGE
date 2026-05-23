@@ -29,7 +29,8 @@ args_dict = {
     # "model": "claude-3-7-sonnet-20250219",
     # "model": "gpt-4o-2024-08-06",
     # "filter_instance": "^(Prob070_ece241_2013_q2|Prob151_review2015_fsm)$",
-    "filter_instance": "^(Prob011_norgate)$",
+    #"filter_instance": "^(Prob011_norgate)$",
+    "filter_instance": "^(Prob093_ece241_2014_q3)$",
     # "filter_instance": "^(.*)$",
     "type_benchmark": "verilog_eval_v2",
     "path_benchmark": "./verilog-eval",
@@ -68,7 +69,7 @@ def run_round(args: argparse.Namespace, llm: LLM):
     agent = TopAgent(llm)
     agent.set_output_path(f"./output_{args.run_identifier}")
     agent.set_log_path(f"./log_{args.run_identifier}")
-    agent.set_redirect_log(True)
+    agent.set_redirect_log(False) # TODO: AMEND TO FALSE TO SUPRESS LOGS
     # agent.set_ablation(True)
     record_file = f"./output_{args.run_identifier}/record.json"
     record_json: Dict[str, Dict[str, Any]] = {"record_per_run": {}, "total_record": {}}
