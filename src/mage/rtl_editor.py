@@ -1,4 +1,6 @@
 import json
+import os
+import re
 from inspect import signature
 from typing import Any, Dict, List, Literal, Tuple, cast
 
@@ -133,6 +135,48 @@ RepairRoute = Literal[
     "ambiguous_runnable",
 ]
 
+FailureClass = Literal[
+    "none",
+    "syntax",
+    "interface",
+    "logic",
+    "ambiguous_runnable",
+]
+
+
+SYNTAX_ERROR_PATTERNS = [
+    r"\bsyntax error\b",
+    r"\bmalformed statement\b",
+    r"\binvalid module item\b",
+    r"\binvalid port connection expression\b",
+    r"\bUnable to bind wire/reg/memory\b",
+    r"\bUnable to elaborate\b",
+    r"\bNo function named\b",
+    r"\berror: .* is not a valid l-value\b",
+]
+
+INTERFACE_ERROR_PATTERNS = [
+    r"\bUnknown module type\b",
+    r"\bThese modules were missing\b",
+    r"\bnot a port of\b",
+    r"\bPort .* expects\b",
+    r"\bWrong number of ports\b",
+    r"\btoo many ports\b",
+    r"\btoo few ports\b",
+    r"\bwidth mismatch\b",
+    r"\bpruning .* high bits\b",
+    r"\bpadding .* high bits\b",
+]
+
+RUNNABLE_FAILURE_PATTERNS = [
+    r"\bSIMULATION FAILED\b",
+    r"\bMISMATCH(?:ES)? DETECTED\b",
+    r"\bFirst mismatch occurred\b",
+    r"\bTimeout \d+(?:\.\d+)?s reached\b",
+]
+
+LOG_EXCERPT_MAX_CHARS = 2000
+
 
 def normalize_repair_route(repair_route: str) -> RepairRoute:
     normalized_route = repair_route.strip().lower().replace("-", "_").replace("/", "_")
@@ -143,6 +187,56 @@ def normalize_repair_route(repair_route: str) -> RepairRoute:
         f"Unknown repair route '{repair_route}', falling back to generic repair."
     )
     return "generic"
+
+
+def _decode_tool_output(tool_output: str) -> str:
+    try:
+        output_obj = json.loads(tool_output)
+    except json.JSONDecodeError:
+        return tool_output
+    if not isinstance(output_obj, dict):
+        return tool_output
+    stdout = output_obj.get("stdout", "")
+    stderr = output_obj.get("stderr", "")
+    return f"{stdout}\n{stderr}".strip()
+
+
+def _matches_any(patterns: List[str], text: str) -> bool:
+    return any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in patterns)
+
+
+def compact_log_signature(log: str) -> str:
+    decoded_log = _decode_tool_output(log)
+    lines = [line.strip() for line in decoded_log.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    return "\n".join(lines[:12])[:1000]
+
+
+def classify_debug_failure(
+    *,
+    is_syntax_pass: bool,
+    syntax_output: str,
+    is_sim_pass: bool,
+    sim_mismatch_cnt: int,
+    sim_output: str,
+) -> FailureClass:
+    if not is_syntax_pass:
+        return "syntax"
+    if is_sim_pass:
+        return "none"
+
+    sim_text = _decode_tool_output(sim_output)
+    syntax_text = _decode_tool_output(syntax_output)
+    combined_text = f"{sim_text}\n{syntax_text}"
+
+    if _matches_any(SYNTAX_ERROR_PATTERNS, combined_text):
+        return "syntax"
+    if _matches_any(INTERFACE_ERROR_PATTERNS, combined_text):
+        return "interface"
+    if sim_mismatch_cnt > 0 or _matches_any(RUNNABLE_FAILURE_PATTERNS, combined_text):
+        return "logic"
+    return "ambiguous_runnable"
 
 ACTION_OUTPUT_PROMPT = r"""
 Output after running given action:
@@ -186,6 +280,8 @@ class RTLEditor:
         self.fail_history_max_length = 6
         self.is_done = False
         self.last_mismatch_cnt: int | None = None
+        self.last_failure_class: FailureClass | None = None
+        self.last_error_signature: str = ""
         self.sim_reviewer = sim_reviewer
         self.repair_route: RepairRoute = "generic"
 
@@ -193,6 +289,8 @@ class RTLEditor:
         self.is_done = False
         self.history = []
         self.last_mismatch_cnt: int | None = None
+        self.last_failure_class = None
+        self.last_error_signature = ""
         self.repair_route = "generic"
 
     def write_rtl(self, content: str) -> None:
@@ -209,20 +307,134 @@ class RTLEditor:
         if is_syntax_pass:
             syntax_output = "Syntax check passed."
         if not is_syntax_pass:
+            failure_class = classify_debug_failure(
+                is_syntax_pass=False,
+                syntax_output=syntax_output,
+                is_sim_pass=False,
+                sim_mismatch_cnt=0,
+                sim_output="",
+            )
             return {
                 "is_syntax_pass": False,
                 "is_sim_pass": False,
+                "failure_class": failure_class,
                 "error_msg": syntax_output,
+                "error_signature": compact_log_signature(syntax_output),
                 "sim_mismatch_cnt": 0,
             }
         is_sim_pass, sim_mismatch_cnt, sim_output = self.sim_reviewer.review()
         assert isinstance(sim_mismatch_cnt, int)
+        failure_class = classify_debug_failure(
+            is_syntax_pass=True,
+            syntax_output=syntax_output,
+            is_sim_pass=is_sim_pass,
+            sim_mismatch_cnt=sim_mismatch_cnt,
+            sim_output=sim_output,
+        )
         return {
             "is_syntax_pass": True,
             "is_sim_pass": is_sim_pass,
+            "failure_class": failure_class,
             "error_msg": "" if is_sim_pass else sim_output,
+            "error_signature": compact_log_signature(sim_output),
             "sim_mismatch_cnt": sim_mismatch_cnt,
         }
+
+    def _append_debug_history(
+        self,
+        *,
+        action_name: str,
+        action_output: Dict[str, Any],
+        old_content: str,
+        new_content: str,
+        route_before: RepairRoute,
+        route_after: RepairRoute,
+    ) -> None:
+        output_dir = getattr(self, "output_dir_per_run", "")
+        if not output_dir:
+            return
+        os.makedirs(output_dir, exist_ok=True)
+        record = {
+            "action": action_name,
+            "repair_route_before": route_before,
+            "repair_route_after": route_after,
+            "is_action_executed": action_output.get("is_action_executed", False),
+            "acceptance_reason": action_output.get("acceptance_reason", ""),
+            "is_syntax_pass": action_output.get("is_syntax_pass"),
+            "is_sim_pass": action_output.get("is_sim_pass"),
+            "failure_class": action_output.get("failure_class"),
+            "sim_mismatch_cnt": action_output.get("sim_mismatch_cnt"),
+            "error_excerpt": str(action_output.get("error_msg", ""))[
+                :LOG_EXCERPT_MAX_CHARS
+            ],
+            "old_content_excerpt": old_content[:LOG_EXCERPT_MAX_CHARS],
+            "new_content_excerpt": new_content[:LOG_EXCERPT_MAX_CHARS],
+        }
+        history_path = os.path.join(output_dir, "debug_history.jsonl")
+        with open(history_path, "a") as f:
+            f.write(json.dumps(record, sort_keys=True) + "\n")
+
+    def _route_after_progress(self, failure_class: FailureClass) -> RepairRoute:
+        if failure_class == "interface":
+            return "interface"
+        if failure_class in ("logic", "ambiguous_runnable"):
+            return "logic"
+        return self.repair_route
+
+    def _judge_route_acceptance(
+        self, action_output: Dict[str, Any]
+    ) -> Tuple[bool, str, RepairRoute]:
+        failure_class = cast(FailureClass, action_output["failure_class"])
+        sim_mismatch_cnt = cast(int, action_output["sim_mismatch_cnt"])
+        error_signature = cast(str, action_output.get("error_signature", ""))
+        signature_changed = error_signature != self.last_error_signature
+        route_after = self.repair_route
+
+        if action_output["is_sim_pass"]:
+            return True, "simulation passed", route_after
+
+        if self.repair_route == "syntax":
+            if failure_class in ("interface", "logic", "ambiguous_runnable"):
+                route_after = self._route_after_progress(failure_class)
+                return True, f"syntax repair advanced to {failure_class}", route_after
+            if failure_class == "syntax" and signature_changed:
+                return True, "syntax error signature changed", route_after
+            return False, "syntax repair did not make observable progress", route_after
+
+        if self.repair_route == "interface":
+            if failure_class in ("logic", "ambiguous_runnable"):
+                route_after = "logic"
+                return True, f"interface repair advanced to {failure_class}", route_after
+            if failure_class == "interface" and signature_changed:
+                return True, "interface error signature changed", route_after
+            return False, "interface repair did not make observable progress", route_after
+
+        if self.repair_route in ("logic", "ambiguous_runnable"):
+            if failure_class in ("syntax", "interface"):
+                return False, f"logic repair introduced {failure_class} blocker", route_after
+            if sim_mismatch_cnt > 0:
+                if (
+                    self.last_mismatch_cnt is None
+                    or self.last_mismatch_cnt == 0
+                    or sim_mismatch_cnt <= self.last_mismatch_cnt
+                ):
+                    return True, "logic mismatch count did not increase", route_after
+                return False, "logic mismatch count increased", route_after
+            if failure_class == "ambiguous_runnable" and signature_changed:
+                return True, "ambiguous runnable failure signature changed", route_after
+            return False, "logic repair did not make observable progress", route_after
+
+        if failure_class in ("syntax", "interface"):
+            return False, f"generic repair left {failure_class} blocker", route_after
+        if sim_mismatch_cnt > 0 and (
+            self.last_mismatch_cnt is None
+            or self.last_mismatch_cnt == 0
+            or sim_mismatch_cnt <= self.last_mismatch_cnt
+        ):
+            return True, "generic mismatch count did not increase", route_after
+        if failure_class == "ambiguous_runnable" and signature_changed:
+            return True, "generic ambiguous failure signature changed", route_after
+        return False, "generic repair did not make observable progress", route_after
 
     def judge_replace_action_execution(
         self,
@@ -232,9 +444,13 @@ class RTLEditor:
         old_file_content: str,
     ) -> Dict[str, Any]:
         sanity_check = self.replace_sanity_check()
+        route_before = self.repair_route
         ret = {
             "is_action_executed": False,
             **sanity_check,
+            "repair_route_before": route_before,
+            "repair_route_after": route_before,
+            "acceptance_reason": "",
         }
         if not ret["is_syntax_pass"]:
             assert isinstance(ret["error_msg"], str)
@@ -243,40 +459,51 @@ class RTLEditor:
                 f"old_content: {old_content},"
                 f"new_content: {new_content}"
             )
+            ret["acceptance_reason"] = "RTL syntax check failed"
             self.write_rtl(old_file_content)
+            self._append_debug_history(
+                action_name=action_name,
+                action_output=ret,
+                old_content=old_content,
+                new_content=new_content,
+                route_before=route_before,
+                route_after=route_before,
+            )
             return ret
-        sim_mismatch_cnt = ret["sim_mismatch_cnt"]
-        if (
-            self.last_mismatch_cnt is not None
-            and sim_mismatch_cnt > self.last_mismatch_cnt
-        ):
-            logger.info(
-                f"Mismatch_cnt {sim_mismatch_cnt} > last {self.last_mismatch_cnt}. Action not executed."
-            )
-            self.write_rtl(old_file_content)
-            assert isinstance(ret["error_msg"], str)
-            ret["error_msg"] += (
-                "Mismatch_cnt increased after the replacement. "
-                f"{action_name} not executed."
-            )
-        elif sim_mismatch_cnt == 0 and ret["is_sim_pass"] is False:
-            logger.info(
-                f"Mismatch_cnt {sim_mismatch_cnt} == 0 but sim failed. Action not executed."
-            )
-            self.write_rtl(old_file_content)
-            assert isinstance(ret["error_msg"], str)
-            ret["error_msg"] += (
-                "Mismatch_cnt is 0 but sim failed. " f"{action_name} not executed."
-            )
-        else:
+
+        should_accept, acceptance_reason, route_after = self._judge_route_acceptance(
+            ret
+        )
+        ret["acceptance_reason"] = acceptance_reason
+        ret["repair_route_after"] = route_after
+        if should_accept:
             # Accept replace
             logger.info(
-                f"Mismatch_cnt {sim_mismatch_cnt} <= last {self.last_mismatch_cnt}. Action executed."
+                f"Action accepted for route {route_before}: {acceptance_reason}."
             )
-            self.last_mismatch_cnt = ret["sim_mismatch_cnt"]
+            self.last_mismatch_cnt = cast(int, ret["sim_mismatch_cnt"])
+            self.last_failure_class = cast(FailureClass, ret["failure_class"])
+            self.last_error_signature = cast(str, ret.get("error_signature", ""))
+            self.repair_route = route_after
             ret["is_action_executed"] = True
-            if self.last_mismatch_cnt == 0:
+            if ret["is_sim_pass"]:
                 self.is_done = True
+        else:
+            logger.info(
+                f"Action rejected for route {route_before}: {acceptance_reason}."
+            )
+            self.write_rtl(old_file_content)
+            assert isinstance(ret["error_msg"], str)
+            ret["error_msg"] += f" {acceptance_reason}. {action_name} not executed."
+
+        self._append_debug_history(
+            action_name=action_name,
+            action_output=ret,
+            old_content=old_content,
+            new_content=new_content,
+            route_before=route_before,
+            route_after=route_after,
+        )
 
         return ret
 
@@ -332,17 +559,41 @@ class RTLEditor:
         logger.info(new_content)
         occurrences = old_file_content.count(old_content)
         if occurrences == 0:
-            return {
+            ret = {
                 "is_action_executed": False,
                 "new_content": "",
                 "error_msg": f"Cannot find old_content in current RTL. replace_content_by_matching not executed.",
+                "acceptance_reason": "old_content not found",
+                "repair_route_before": self.repair_route,
+                "repair_route_after": self.repair_route,
             }
+            self._append_debug_history(
+                action_name="replace_content_by_matching",
+                action_output=ret,
+                old_content=old_content,
+                new_content=new_content,
+                route_before=self.repair_route,
+                route_after=self.repair_route,
+            )
+            return ret
         elif occurrences > 1:
-            return {
+            ret = {
                 "is_action_executed": False,
                 "new_content": "",
                 "error_msg": f"Find multiple old_content in current RTL. replace_content_by_matching not executed.",
+                "acceptance_reason": "old_content matched multiple locations",
+                "repair_route_before": self.repair_route,
+                "repair_route_after": self.repair_route,
             }
+            self._append_debug_history(
+                action_name="replace_content_by_matching",
+                action_output=ret,
+                old_content=old_content,
+                new_content=new_content,
+                route_before=self.repair_route,
+                route_after=self.repair_route,
+            )
+            return ret
 
         # Replace old_str with new_str
         new_file_content = old_file_content.replace(old_content, new_content)
@@ -400,7 +651,7 @@ class RTLEditor:
     def get_order_prompt_messages(self) -> List[ChatMessage]:
         with open(self.rtl_path, "r") as f:
             rtl_code = f.read()
-        
+
         logger.info(f"----------> RTLEDITOR RECEIVED ROUTE: {self.repair_route}")
         route_prompt = ROUTE_REPAIR_PROMPTS[self.repair_route]
         return [
@@ -409,6 +660,7 @@ class RTLEditor:
                     output_format="".join(json.dumps(EXAMPLE_OUTPUT, indent=4))
                 )
                 + EXTRA_ORDER_PROMPT.format(rtl_code=rtl_code)
+                + f"\nCurrent repair_route: {self.repair_route}\n"
                 + route_prompt,
                 role=MessageRole.USER,
             ),
@@ -469,6 +721,13 @@ class RTLEditor:
         self.sim_failed_log = sim_failed_log
         self.last_mismatch_cnt = sim_mismatch_cnt
         self.repair_route = normalize_repair_route(repair_route)
+        self.last_failure_class = (
+            self.repair_route
+            if self.repair_route
+            in ("syntax", "interface", "logic", "ambiguous_runnable")
+            else None
+        )
+        self.last_error_signature = compact_log_signature(sim_failed_log)
 
         self.history.extend(self.get_init_prompt_messages())
         is_pass = False

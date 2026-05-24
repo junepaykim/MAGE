@@ -102,6 +102,9 @@ TOKEN_COSTS = {
     "gpt-4o-2024-05-13": TokenCost(
         in_token_cost_per_token=5.0 / 1000000, out_token_cost_per_token=15.0 / 1000000
     ),
+    "gpt-5.4-mini": TokenCost(
+        in_token_cost_per_token=0.75 / 1000000, out_token_cost_per_token=4.50 / 1000000
+    ),
     "gemini-1.5-pro-002": TokenCost(
         in_token_cost_per_token=1.25 / 1000000, out_token_cost_per_token=5.0 / 1000000
     ),
@@ -123,7 +126,14 @@ class TokenCounter:
         self.enable_reformat_json = isinstance(llm, Vertex)
         model = llm.metadata.model_name
         if isinstance(llm, OpenAI):
-            self.encoding = tiktoken.encoding_for_model(model)
+            try:
+                self.encoding = tiktoken.encoding_for_model(model)
+            except KeyError:
+                logger.warning(
+                    f"Cannot map OpenAI model '{model}' to a tokenizer; "
+                    "falling back to o200k_base."
+                )
+                self.encoding = tiktoken.get_encoding("o200k_base")
         elif isinstance(llm, Anthropic):
             self.encoding = llm.tokenizer
         elif isinstance(llm, Vertex):

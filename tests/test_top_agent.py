@@ -23,6 +23,8 @@ logger = get_logger(__name__)
 args_dict = {
     "provider": "openai",
     "model": "gpt-5-mini",
+    "sim_judge_provider": "openai",
+    "sim_judge_model": "gpt-5.4-mini",
     # "provider": "vertexanthropic",
     # "model": "claude-3-7-sonnet@20250219",
     # "model": "gemini-2.0-flash-001",
@@ -67,6 +69,12 @@ def run_round(args: argparse.Namespace, llm: LLM):
     )
 
     agent = TopAgent(llm)
+    agent.set_sim_judge_llm_config(
+        provider=args.sim_judge_provider,
+        model=args.sim_judge_model,
+        key_cfg_path=args.key_cfg_path,
+        max_token=args.max_token,
+    )
     agent.set_output_path(f"./output_{args.run_identifier}")
     agent.set_log_path(f"./log_{args.run_identifier}")
     agent.set_redirect_log(False) # TODO: AMEND TO FALSE TO SUPRESS LOGS
