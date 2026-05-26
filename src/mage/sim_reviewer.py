@@ -38,13 +38,17 @@ def check_syntax(rtl_path: str) -> Tuple[bool, str]:
 
 
 def sim_review_mismatch_cnt(stdout: str) -> int:
-    mismatch_cnt = 0
-    if "SIMULATION FAILED" in stdout:
-        re_str = r"SIMULATION FAILED - (\d*) MISMATCHES DETECTED"
-        m = re.search(re_str, stdout)
-        assert m is not None, f"Failed to parse mismatch count from: {stdout}"
-        mismatch_cnt = int(m.group(1))
-    return mismatch_cnt
+    mismatch_patterns = [
+        r"SIMULATION FAILED - (\d+) MISMATCHES DETECTED",
+        r"Mismatches:\s*(\d+)\s+in\s+\d+\s+samples",
+        r"Output '.*?' has (\d+) mismatches",
+        r"Total mismatched samples is (\d+)\s+out of\s+\d+\s+samples",
+    ]
+    for pattern in mismatch_patterns:
+        m = re.search(pattern, stdout, flags=re.IGNORECASE)
+        if m is not None:
+            return int(m.group(1))
+    return 0
 
 
 def sim_review(

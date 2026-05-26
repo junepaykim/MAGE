@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 from llama_index.core.llms import LLM
 
+from .gen_config import get_llm
 from .log_utils import get_logger, set_log_dir, switch_log_to_file, switch_log_to_stdout
 from .rtl_editor import RTLEditor
 from .rtl_generator import RTLGenerator
@@ -20,11 +21,13 @@ logger = get_logger(__name__)
 class TopAgent:
     def __init__(self, llm: LLM):
         self.llm = llm
-        self.token_counter = (
-            TokenCounterCached(llm)
-            if TokenCounterCached.is_cache_enabled(llm)
-            else TokenCounter(llm)
-        )
+        self.token_counter = self._create_token_counter(llm)
+        self.sim_judge_provider = "openai"
+        self.sim_judge_model = "gpt-5.4-mini"
+        self.sim_judge_key_cfg_path = "./key.cfg"
+        self.sim_judge_max_token = 8192
+        self.sim_judge_llm: LLM | None = None
+        self.sim_judge_token_counter: TokenCounter | None = None
         self.sim_max_retry = 4
         self.rtl_max_candidates = 20
         self.rtl_selected_candidates = 2
@@ -39,6 +42,50 @@ class TopAgent:
         self.sim_reviewer: SimReviewer | None = None
         self.sim_judge: SimJudge | None = None
         self.rtl_edit: RTLEditor | None = None
+
+    @staticmethod
+    def _create_token_counter(llm: LLM) -> TokenCounter:
+        return (
+            TokenCounterCached(llm)
+            if TokenCounterCached.is_cache_enabled(llm)
+            else TokenCounter(llm)
+        )
+
+    def set_sim_judge_llm_config(
+        self,
+        provider: str = "openai",
+        model: str = "gpt-5.4-mini",
+        key_cfg_path: str = "./key.cfg",
+        max_token: int = 8192,
+    ) -> None:
+        self.sim_judge_provider = provider
+        self.sim_judge_model = model
+        self.sim_judge_key_cfg_path = key_cfg_path
+        self.sim_judge_max_token = max_token
+        self.sim_judge_llm = None
+        self.sim_judge_token_counter = None
+
+    def set_sim_judge_llm(self, llm: LLM) -> None:
+        self.sim_judge_llm = llm
+        self.sim_judge_token_counter = self._create_token_counter(llm)
+
+    def _get_sim_judge_token_counter(self) -> TokenCounter:
+        if self.sim_judge_token_counter is None:
+            if self.sim_judge_llm is None:
+                logger.info(
+                    "Initializing SimJudge LLM: "
+                    f"{self.sim_judge_provider}/{self.sim_judge_model}"
+                )
+                self.sim_judge_llm = get_llm(
+                    provider=self.sim_judge_provider,
+                    model=self.sim_judge_model,
+                    cfg_path=self.sim_judge_key_cfg_path,
+                    max_token=self.sim_judge_max_token,
+                )
+            self.sim_judge_token_counter = self._create_token_counter(
+                self.sim_judge_llm
+            )
+        return self.sim_judge_token_counter
 
     def set_output_path(self, output_path: str) -> None:
         self.output_path = output_path
@@ -96,6 +143,7 @@ class TopAgent:
         )
         if not is_syntax_pass:
             return False, rtl_code
+
         self.write_output(rtl_code, "rtl.sv")
         logger.info("Initial rtl:")
         logger.info(rtl_code)
@@ -103,6 +151,13 @@ class TopAgent:
         tb_need_fix = True
         rtl_need_fix = True
         sim_log = ""
+        error_route = "generic"
+        allow_tb_fix = not bool(self.golden_tb_path or self.golden_rtl_blackbox_path)
+        if not allow_tb_fix:
+            logger.info(
+                "Golden benchmark oracle detected; simulation failures will be routed to RTL debug."
+            )
+
         for i in range(self.sim_max_retry):
             # run simulation judge, overwrite is_sim_pass
             is_sim_pass, sim_mismatch_cnt, sim_log = self.sim_reviewer.review()
@@ -111,7 +166,14 @@ class TopAgent:
                 rtl_need_fix = False
                 break
             self.sim_judge.reset()
-            tb_need_fix = self.sim_judge.chat(spec, sim_log, rtl_code, testbench)
+            tb_need_fix, error_route = self.sim_judge.chat(
+                spec,
+                sim_log,
+                rtl_code,
+                testbench,
+                allow_tb_fix=allow_tb_fix,
+            )
+            logger.info(f"DEBUG ERROR ROUTE: {error_route}")
             if tb_need_fix:
                 self.tb_gen.reset()
                 if i == 0:
@@ -199,6 +261,7 @@ class TopAgent:
                     output_dir_per_run=self.output_dir_per_run,
                     sim_failed_log=sim_log,
                     sim_mismatch_cnt=sim_mismatch_cnt,
+                    repair_route=error_route
                 )
                 if is_sim_pass:
                     rtl_need_fix = False
@@ -232,13 +295,22 @@ class TopAgent:
             if os.path.exists(f"{self.output_dir_per_run}/properly_finished.tag"):
                 os.remove(f"{self.output_dir_per_run}/properly_finished.tag")
             self.token_counter.reset()
+            sim_judge_token_counter = (
+                self._get_sim_judge_token_counter() if not self.is_ablation else None
+            )
+            if sim_judge_token_counter is not None:
+                sim_judge_token_counter.reset()
             self.sim_reviewer = SimReviewer(
                 self.output_dir_per_run,
                 self.golden_rtl_blackbox_path,
             )
             self.rtl_gen = RTLGenerator(self.token_counter)
             self.tb_gen = TBGenerator(self.token_counter)
-            self.sim_judge = SimJudge(self.token_counter)
+            self.sim_judge = (
+                SimJudge(sim_judge_token_counter)
+                if sim_judge_token_counter is not None
+                else None
+            )
             self.rtl_edit = RTLEditor(
                 self.token_counter, sim_reviewer=self.sim_reviewer
             )
@@ -248,6 +320,9 @@ class TopAgent:
                 else self.run_instance_ablation(spec)
             )
             self.token_counter.log_token_stats()
+            if sim_judge_token_counter is not None:
+                logger.info("SimJudge token stats:")
+                sim_judge_token_counter.log_token_stats()
             with open(f"{self.output_dir_per_run}/properly_finished.tag", "w") as f:
                 f.write("1")
         except Exception:
