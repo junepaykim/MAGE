@@ -50,10 +50,6 @@ The information below is give to help your work:
 <sim_failed_log>
 {sim_failed_log}
 </sim_failed_log>
-
-[Hints]:
-For implementing kmap (Karnaugh map), you need to think and solve mismatches step by step.
-Find the inputs corresponding to mismatch in sim_failed_log, and set the output to correct value while maintaining other outputs.
 """
 
 EXTRA_ORDER_PROMPT = r"""
