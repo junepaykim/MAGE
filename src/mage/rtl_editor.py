@@ -244,9 +244,9 @@ Output after running given action:
 EXAMPLE_OUTPUT = {
     "reasoning": "All reasoning steps",
     "action_input": {
-        "command": "replace_content_by_matching",
+        "command": "replace_content_by_matching OR replace_entire_file",
         "args": {
-            "old_content": "content to be replaced",
+            "old_content": "content to be replaced (only if using replace_content_by_matching)",
             "new_content": "content to replace",
         },
     },
@@ -407,7 +407,7 @@ class RTLEditor:
 
         if self.repair_route in ("logic", "ambiguous_runnable"):
             if failure_class in ("syntax", "interface"):
-                return False, f"logic repair introduced {failure_class} blocker", route_after
+                return True, f"logic repair introduced {failure_class} blocker, pivoting route", failure_class 
             if sim_mismatch_cnt > 0:
                 if (
                     self.last_mismatch_cnt is None
@@ -600,6 +600,38 @@ class RTLEditor:
         # ret["new_file_content"] = new_file_content
         return ret
 
+    def replace_entire_file(self, new_content: str) -> Dict[str, Any]:
+        """
+        Overwrites the entire RTL file with the new content.
+        CRITICAL: You MUST use this tool if a previous call to replace_content_by_matching failed.
+        Use this when replacing large blocks of code or when fixing broad logic errors to avoid whitespace matching issues.
+
+        Input:
+            new_content: The complete, new SystemVerilog module code.
+        Output:
+            A dictionary containing:
+                1. Whether the action is executed.
+                2. The error message if the action is not executed.
+                3. Other information like syntax check result and simulation check result.
+        """
+        old_file_content = self.read_rtl().expandtabs(4)
+        new_content = new_content.expandtabs(4)
+
+        logger.info(f"Target new Content (Whole File Replacement):")
+        logger.info(new_content)
+
+        # 1. Overwrite the file entirely
+        self.write_rtl(new_content)
+
+        # 2. Run it through the exact same judgment pipeline
+        ret = self.judge_replace_action_execution(
+            old_content=old_file_content, # The old content was the whole file
+            new_content=new_content, 
+            action_name="replace_entire_file", 
+            old_file_content=old_file_content
+        )
+        return ret
+
     def generate(self, messages: List[ChatMessage]) -> ChatResponse:
         logger.info(f"RTL editor input message: {messages}")
         resp, token_cnt = self.token_counter.count_chat(messages)
@@ -615,7 +647,8 @@ class RTLEditor:
         )
 
     def get_init_prompt_messages(self) -> List[ChatMessage]:
-        actions = [self.replace_content_by_matching]
+        actions = [self.replace_content_by_matching, self.replace_entire_file]
+
         actions_prompt = SYSTEM_PROMPT.format(
             actions="".join([self.gen_action_prompt(action) for action in actions])
         )
@@ -655,9 +688,8 @@ class RTLEditor:
                 content=ORDER_PROMPT.format(
                     output_format="".join(json.dumps(EXAMPLE_OUTPUT, indent=4))
                 )
-                + EXTRA_ORDER_PROMPT.format(rtl_code=rtl_code)
-                + f"\nCurrent repair_route: {self.repair_route}\n"
-                + route_prompt,
+                + f"\nRoute-Specific Goal: {route_prompt}\n"
+                + EXTRA_ORDER_PROMPT.format(rtl_code=rtl_code), # rtl code at bottom for more attention weighting
                 role=MessageRole.USER,
             ),
         ]
