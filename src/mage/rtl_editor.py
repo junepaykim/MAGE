@@ -407,7 +407,11 @@ class RTLEditor:
 
         if self.repair_route in ("logic", "ambiguous_runnable"):
             if failure_class in ("syntax", "interface"):
-                return True, f"logic repair introduced {failure_class} blocker, pivoting route", failure_class 
+                return (
+                    True,
+                    f"logic repair introduced {failure_class} blocker, pivoting route",
+                    failure_class,
+                )
             if sim_mismatch_cnt > 0:
                 if (
                     self.last_mismatch_cnt is None
@@ -763,6 +767,7 @@ class RTLEditor:
         fail_history: List[ChatMessage] = []
         for i in range(self.max_trials):
             logger.info(f"RTL Editing: round {i + 1} / {self.max_trials}")
+            logger.info(f"RTL editor repair route: {self.repair_route}")
             response = self.generate(
                 self.history
                 + succeed_history

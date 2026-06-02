@@ -103,7 +103,12 @@ TOKEN_COSTS = {
         in_token_cost_per_token=5.0 / 1000000, out_token_cost_per_token=15.0 / 1000000
     ),
     "gpt-5.4-mini": TokenCost(
-        in_token_cost_per_token=0.75 / 1000000, out_token_cost_per_token=4.50 / 1000000
+        in_token_cost_per_token=0.75 / 1000000,
+        out_token_cost_per_token=4.50 / 1000000,
+    ),
+    "gpt-5.4-nano": TokenCost(
+        in_token_cost_per_token=0.20 / 1000000,
+        out_token_cost_per_token=1.25 / 1000000,
     ),
     "gemini-1.5-pro-002": TokenCost(
         in_token_cost_per_token=1.25 / 1000000, out_token_cost_per_token=5.0 / 1000000

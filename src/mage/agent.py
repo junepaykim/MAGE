@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import sys
@@ -8,7 +9,7 @@ from llama_index.core.llms import LLM
 
 from .gen_config import get_llm
 from .log_utils import get_logger, set_log_dir, switch_log_to_file, switch_log_to_stdout
-from .rtl_editor import RTLEditor
+from .rtl_editor import RTLEditor, classify_debug_failure
 from .rtl_generator import RTLGenerator
 from .sim_judge import SimJudge
 from .sim_reviewer import SimReviewer
@@ -31,6 +32,8 @@ class TopAgent:
         self.sim_max_retry = 4
         self.rtl_max_candidates = 20
         self.rtl_selected_candidates = 2
+        self.editor_max_trials = 15
+        self.enable_failure_routing = False
         self.is_ablation = False
         self.redirect_log = False
         self.output_path = "./output"
@@ -108,6 +111,43 @@ class TopAgent:
         with open(f"{self.output_dir_per_run}/{file_name}", "w") as f:
             f.write(content)
 
+    def classify_sim_failure(
+        self,
+        *,
+        is_sim_pass: bool,
+        sim_mismatch_cnt: int,
+        sim_log: str,
+    ) -> str:
+        failure_class = classify_debug_failure(
+            is_syntax_pass=True,
+            syntax_output="",
+            is_sim_pass=is_sim_pass,
+            sim_mismatch_cnt=sim_mismatch_cnt,
+            sim_output=sim_log,
+        )
+        if failure_class == "none":
+            return "generic"
+        return failure_class
+
+    def write_route_history(
+        self,
+        *,
+        route: str,
+        sim_mismatch_cnt: int,
+        sim_log: str,
+        stage: str,
+    ) -> None:
+        assert self.output_dir_per_run
+        history_path = os.path.join(self.output_dir_per_run, "route_history.jsonl")
+        record = {
+            "stage": stage,
+            "repair_route": route,
+            "sim_mismatch_cnt": sim_mismatch_cnt,
+            "sim_log_excerpt": sim_log[:2000],
+        }
+        with open(history_path, "a") as f:
+            f.write(json.dumps(record, sort_keys=True) + "\n")
+
     def run_instance(self, spec: str) -> Tuple[bool, str]:
         """
         Run a single instance of the benchmark
@@ -150,6 +190,8 @@ class TopAgent:
 
         tb_need_fix = True
         rtl_need_fix = True
+        is_sim_pass = False
+        sim_mismatch_cnt = 0
         sim_log = ""
         error_route = "generic"
         allow_tb_fix = not bool(self.golden_tb_path or self.golden_rtl_blackbox_path)
@@ -164,6 +206,21 @@ class TopAgent:
             if is_sim_pass:
                 tb_need_fix = False
                 rtl_need_fix = False
+                break
+            if self.enable_failure_routing:
+                error_route = self.classify_sim_failure(
+                    is_sim_pass=is_sim_pass,
+                    sim_mismatch_cnt=sim_mismatch_cnt,
+                    sim_log=sim_log,
+                )
+                logger.info(f"Routed RTL failure to {error_route}")
+                self.write_route_history(
+                    route=error_route,
+                    sim_mismatch_cnt=sim_mismatch_cnt,
+                    sim_log=sim_log,
+                    stage="initial_sim",
+                )
+                tb_need_fix = False
                 break
             self.sim_judge.reset()
             tb_need_fix, error_route = self.sim_judge.chat(
@@ -193,10 +250,8 @@ class TopAgent:
 
         candidates_info: List[Tuple[str, int, str]] = []
         if rtl_need_fix:
+            candidates_info.append((rtl_code, sim_mismatch_cnt, sim_log))
             # Candidates Generation
-            assert (
-                sim_mismatch_cnt > 0
-            ), f"rtl_need_fix should be True only when sim_mismatch_cnt > 0. sim_log: {sim_log}"
             self.rtl_gen.reset()
             candidates = [
                 self.rtl_gen.chat(
@@ -247,6 +302,8 @@ class TopAgent:
 
         if rtl_need_fix:
             # Editor iteration
+            if not candidates_info_unique:
+                candidates_info_unique = [(rtl_code, sim_mismatch_cnt, sim_log)]
             for i in range(self.rtl_selected_candidates):
                 logger.info(
                     f"Selected candidate: round {i + 1} / {self.rtl_selected_candidates}"
@@ -261,7 +318,7 @@ class TopAgent:
                     output_dir_per_run=self.output_dir_per_run,
                     sim_failed_log=sim_log,
                     sim_mismatch_cnt=sim_mismatch_cnt,
-                    repair_route=error_route
+                    repair_route=error_route,
                 )
                 if is_sim_pass:
                     rtl_need_fix = False
@@ -314,6 +371,7 @@ class TopAgent:
             self.rtl_edit = RTLEditor(
                 self.token_counter, sim_reviewer=self.sim_reviewer
             )
+            self.rtl_edit.max_trials = self.editor_max_trials
             ret = (
                 self.run_instance(spec)
                 if not self.is_ablation
