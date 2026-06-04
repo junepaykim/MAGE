@@ -1,0 +1,157 @@
+task_id,valid_pair,raw_outcome,b0_pass,b1_pass,b0_properly_finished,b1_properly_finished,crashed_or_invalid_arms,invalid_reason_classes,b0_cost,b1_cost,b1_route_counts
+Prob001_zero,True,both_pass,True,True,True,True,,,0.003273,0.003343,{}
+Prob002_m2014_q4i,False,both_pass,True,True,False,True,B0,B0=tb_judge_assertion,0.010804,0.003287,{}
+Prob003_step_one,True,both_pass,True,True,True,True,,,0.003388,0.003517,{}
+Prob004_vector2,True,both_pass,True,True,True,True,,,0.003854,0.003559,{}
+Prob005_notgate,True,both_pass,True,True,True,True,,,0.003318,0.003414,{}
+Prob006_vectorr,True,both_pass,True,True,True,True,,,0.003924,0.004060,{}
+Prob007_wire,True,both_pass,True,True,True,True,,,0.003296,0.003316,{}
+Prob008_m2014_q4h,False,routed_only_pass,False,True,False,True,B0,B0=tb_judge_assertion,0.010045,0.003209,{}
+Prob009_popcount3,True,both_pass,True,True,True,True,,,0.003698,0.012949,"{""syntax"": 4}"
+Prob010_mt2015_q4a,True,both_pass,True,True,True,True,,,0.003291,0.003077,{}
+Prob011_norgate,True,both_pass,True,True,True,True,,,0.003498,0.003583,{}
+Prob012_xnorgate,True,both_pass,True,True,True,True,,,0.003358,0.003619,{}
+Prob013_m2014_q4e,True,both_pass,True,True,True,True,,,0.003168,0.011251,"{""syntax"": 4}"
+Prob014_andgate,True,both_pass,True,True,True,True,,,0.003418,0.003508,{}
+Prob015_vector1,True,both_pass,True,True,True,True,,,0.004340,0.004058,{}
+Prob016_m2014_q4j,True,both_pass,True,True,True,True,,,0.003766,0.003845,{}
+Prob017_mux2to1v,True,both_pass,True,True,True,True,,,0.004015,0.003697,{}
+Prob018_mux256to1,True,both_pass,True,True,True,True,,,0.003517,0.003662,{}
+Prob019_m2014_q4f,False,both_pass,True,True,False,True,B0,B0=tb_judge_assertion,0.009563,0.003341,{}
+Prob020_mt2015_eq2,True,both_pass,True,True,True,True,,,0.003384,0.004083,{}
+Prob021_mux256to1v,False,both_pass,True,True,True,False,B1,B1=rtl_editor_json_decode,0.004324,0.017688,"{""ambiguous_runnable"": 2}"
+Prob022_mux2to1,True,both_pass,True,True,True,True,,,0.003915,0.004018,{}
+Prob023_vector100r,True,both_pass,True,True,True,True,,,0.003912,0.003373,{}
+Prob024_hadd,True,both_pass,True,True,True,True,,,0.003454,0.010845,"{""syntax"": 3}"
+Prob025_reduction,True,both_pass,True,True,True,True,,,0.003395,0.003190,{}
+Prob026_alwaysblock1,True,both_pass,True,True,True,True,,,0.004447,0.004487,{}
+Prob027_fadd,True,both_pass,True,True,True,True,,,0.004163,0.004250,{}
+Prob028_m2014_q4a,True,mage_only_pass,True,False,True,True,,,0.004244,0.010258,"{""ambiguous_runnable"": 2}"
+Prob029_m2014_q4g,True,both_pass,True,True,True,True,,,0.003530,0.003565,{}
+Prob030_popcount255,True,both_pass,True,True,True,True,,,0.004469,0.004179,{}
+Prob031_dff,False,both_pass,True,True,False,True,B0,B0=tb_judge_assertion,0.011965,0.004060,{}
+Prob032_vector0,True,both_pass,True,True,True,True,,,0.005203,0.005024,{}
+Prob033_ece241_2014_q1c,True,both_pass,True,True,True,True,,,0.004563,0.004537,{}
+Prob034_dff8,True,both_pass,True,True,True,True,,,0.003696,0.009644,"{""logic"": 1}"
+Prob035_count1to10,True,both_pass,True,True,True,True,,,0.004739,0.004704,{}
+Prob036_ringer,True,both_pass,True,True,True,True,,,0.003946,0.004240,{}
+Prob037_review2015_count1k,True,routed_only_pass,False,True,True,True,,,0.016391,0.004876,{}
+Prob038_count15,True,both_pass,True,True,True,True,,,0.004659,0.004558,{}
+Prob039_always_if,True,both_pass,True,True,True,True,,,0.005014,0.004910,{}
+Prob040_count10,True,both_pass,True,True,True,True,,,0.015298,0.004830,{}
+Prob041_dff8r,True,both_pass,True,True,True,True,,,0.014750,0.013818,"{""ambiguous_runnable"": 3}"
+Prob042_vector4,True,both_pass,True,True,True,True,,,0.007013,0.003344,{}
+Prob043_vector5,True,both_pass,True,True,True,True,,,0.004589,0.004216,{}
+Prob044_vectorgates,True,both_pass,True,True,True,True,,,0.005027,0.005381,{}
+Prob045_edgedetect2,True,both_pass,True,True,True,True,,,0.009174,0.010873,"{""logic"": 1}"
+Prob046_dff8p,True,both_pass,True,True,True,True,,,0.004844,0.005219,{}
+Prob047_dff8ar,True,both_pass,True,True,True,True,,,0.005017,0.014413,"{""syntax"": 4}"
+Prob048_m2014_q4c,True,both_pass,True,True,True,True,,,0.004133,0.003890,{}
+Prob049_m2014_q4b,True,both_pass,True,True,True,True,,,0.013204,0.004270,{}
+Prob050_kmap1,True,both_pass,True,True,True,True,,,0.003709,0.008481,"{""logic"": 1}"
+Prob051_gates4,True,both_pass,True,True,True,True,,,0.004472,0.004909,{}
+Prob052_gates100,True,both_pass,True,True,True,True,,,0.005514,0.005235,{}
+Prob053_m2014_q4d,True,both_pass,True,True,True,True,,,0.007167,0.012481,"{""syntax"": 1}"
+Prob054_edgedetect,True,both_pass,True,True,True,True,,,0.013223,0.010835,"{""logic"": 1}"
+Prob055_conditional,True,both_pass,True,True,True,True,,,0.004357,0.004214,{}
+Prob056_ece241_2013_q7,True,both_pass,True,True,True,True,,,0.004915,0.004601,{}
+Prob057_kmap2,True,both_pass,True,True,True,True,,,0.013127,0.012261,"{""ambiguous_runnable"": 1}"
+Prob058_alwaysblock2,True,both_pass,True,True,True,True,,,0.006090,0.016780,"{""syntax"": 4}"
+Prob059_wire4,True,both_pass,True,True,True,True,,,0.004510,0.004616,{}
+Prob060_m2014_q4k,True,both_pass,True,True,True,True,,,0.007379,0.004177,{}
+Prob061_2014_q4a,True,both_pass,True,True,True,True,,,0.005068,0.004348,{}
+Prob062_bugs_mux2,True,both_pass,True,True,True,True,,,0.011372,0.013869,"{""interface"": 2, ""logic"": 2}"
+Prob063_review2015_shiftcount,True,both_pass,True,True,True,True,,,0.016756,0.012642,"{""logic"": 1}"
+Prob064_vector3,True,both_pass,True,True,True,True,,,0.006306,0.006380,{}
+Prob065_7420,True,both_pass,True,True,True,True,,,0.005185,0.005469,{}
+Prob066_edgecapture,True,mage_only_pass,True,False,True,True,,,0.013707,0.015632,"{""syntax"": 3}"
+Prob067_countslow,True,both_pass,True,True,True,True,,,0.005496,0.005934,{}
+Prob068_countbcd,True,both_pass,True,True,True,True,,,0.027745,0.028537,"{""syntax"": 4}"
+Prob069_truthtable1,True,both_pass,True,True,True,True,,,0.003987,0.004487,{}
+Prob070_ece241_2013_q2,True,both_fail,False,False,True,True,,,0.022204,0.024966,"{""logic"": 4}"
+Prob071_always_casez,True,both_pass,True,True,True,True,,,0.004084,0.004050,{}
+Prob072_thermostat,True,both_pass,True,True,True,True,,,0.006578,0.006044,{}
+Prob073_dff16e,True,both_pass,True,True,True,True,,,0.009969,0.017473,"{""syntax"": 4}"
+Prob074_ece241_2014_q4,True,both_pass,True,True,True,True,,,0.005164,0.017929,"{""syntax"": 4}"
+Prob075_counter_2bc,True,both_pass,True,True,True,True,,,0.006269,0.006285,{}
+Prob076_always_case,True,both_pass,True,True,True,True,,,0.004965,0.005027,{}
+Prob077_wire_decl,True,both_pass,True,True,True,True,,,0.004295,0.004367,{}
+Prob078_dualedge,True,both_pass,True,True,True,True,,,0.011022,0.004696,{}
+Prob079_fsm3onehot,True,both_pass,True,True,True,True,,,0.019852,0.020769,"{""syntax"": 4}"
+Prob080_timer,True,both_pass,True,True,True,True,,,0.009455,0.005353,{}
+Prob081_7458,True,both_pass,True,True,True,True,,,0.005471,0.005606,{}
+Prob082_lfsr32,True,both_pass,True,True,True,True,,,0.008886,0.004869,{}
+Prob083_mt2015_q4b,True,both_pass,True,True,True,True,,,0.003640,0.004111,{}
+Prob084_ece241_2013_q12,True,both_pass,True,True,True,True,,,0.015528,0.014459,"{""ambiguous_runnable"": 1}"
+Prob085_shift4,True,both_pass,True,True,True,True,,,0.010885,0.005882,{}
+Prob086_lfsr5,True,both_pass,True,True,True,True,,,0.006208,0.014955,"{""logic"": 1}"
+Prob087_gates,True,both_pass,True,True,True,True,,,0.006973,0.006708,{}
+Prob088_ece241_2014_q5b,True,both_pass,True,True,True,True,,,0.015478,0.005752,{}
+Prob089_ece241_2014_q5a,True,mage_only_pass,True,False,True,True,,,0.015597,0.018484,"{""logic"": 4}"
+Prob090_circuit1,True,both_pass,True,True,True,True,,,0.003696,0.003656,{}
+Prob091_2012_q2b,True,both_pass,True,True,True,True,,,0.009941,0.005930,{}
+Prob092_gatesv100,True,both_pass,True,True,True,True,,,0.005579,0.005388,{}
+Prob093_ece241_2014_q3,False,both_fail,False,False,True,False,B1,B1=rtl_editor_json_decode,0.020793,0.031560,"{""logic"": 1}"
+Prob094_gatesv,True,both_pass,True,True,True,True,,,0.005997,0.005855,{}
+Prob095_review2015_fsmshift,True,both_pass,True,True,True,True,,,0.008135,0.015496,"{""syntax"": 4}"
+Prob096_review2015_fsmseq,True,both_pass,True,True,True,True,,,0.015550,0.005977,{}
+Prob097_mux9to1v,True,both_pass,True,True,True,True,,,0.005202,0.005538,{}
+Prob098_circuit7,True,mage_only_pass,True,False,True,True,,,0.004391,0.014280,"{""ambiguous_runnable"": 4}"
+Prob099_m2014_q6c,False,both_fail,False,False,False,True,B0,B0=tb_judge_assertion,0.014809,0.020915,"{""interface"": 4}"
+Prob100_fsm3comb,False,both_pass,True,True,False,True,B0,B0=tb_judge_assertion,0.012955,0.020119,"{""syntax"": 4}"
+Prob101_circuit4,True,both_pass,True,True,True,True,,,0.004719,0.013763,"{""logic"": 1}"
+Prob102_circuit3,True,both_pass,True,True,True,True,,,0.010500,0.018296,"{""logic"": 1}"
+Prob103_circuit2,True,both_pass,True,True,True,True,,,0.015952,0.006308,{}
+Prob104_mt2015_muxdff,True,both_pass,True,True,True,True,,,0.005248,0.016169,"{""syntax"": 4}"
+Prob105_rotate100,True,both_pass,True,True,True,True,,,0.008786,0.004129,{}
+Prob106_always_nolatches,True,both_pass,True,True,True,True,,,0.005432,0.005325,{}
+Prob107_fsm1s,True,both_pass,True,True,True,True,,,0.005198,0.005342,{}
+Prob108_rule90,True,both_pass,True,True,True,True,,,0.005321,0.016654,"{""ambiguous_runnable"": 4}"
+Prob109_fsm1,True,both_pass,True,True,True,True,,,0.005512,0.005444,{}
+Prob110_fsm2,True,both_pass,True,True,True,True,,,0.009009,0.005456,{}
+Prob111_fsm2s,True,both_pass,True,True,True,True,,,0.016643,0.017754,"{""ambiguous_runnable"": 2}"
+Prob112_always_case2,True,both_pass,True,True,True,True,,,0.014031,0.009751,"{""logic"": 1}"
+Prob113_2012_q1g,True,routed_only_pass,False,True,True,True,,,0.016050,0.016936,"{""logic"": 3}"
+Prob114_bugs_case,True,both_pass,True,True,True,True,,,0.005118,0.005104,{}
+Prob115_shift18,True,both_pass,True,True,True,True,,,0.010267,0.005950,{}
+Prob116_m2014_q3,True,both_fail,False,False,True,True,,,0.023308,0.016390,"{""syntax"": 4}"
+Prob117_circuit9,True,both_pass,True,True,True,True,,,0.014981,0.013273,"{""logic"": 2}"
+Prob118_history_shift,True,both_pass,True,True,True,True,,,0.012065,0.019595,"{""syntax"": 4}"
+Prob119_fsm3,True,both_pass,True,True,True,True,,,0.005840,0.005885,{}
+Prob120_fsm3s,True,both_pass,True,True,True,True,,,0.017427,0.016523,"{""syntax"": 3}"
+Prob121_2014_q3bfsm,True,both_pass,True,True,True,True,,,0.013889,0.013093,"{""ambiguous_runnable"": 1}"
+Prob122_kmap4,True,both_pass,True,True,True,True,,,0.010372,0.004084,{}
+Prob123_bugs_addsubz,True,both_pass,True,True,True,True,,,0.004912,0.005147,{}
+Prob124_rule110,True,both_pass,True,True,True,True,,,0.021839,0.015474,"{""logic"": 1}"
+Prob125_kmap3,True,mage_only_pass,True,False,True,True,,,0.021040,0.020301,"{""logic"": 4}"
+Prob126_circuit6,True,both_pass,True,True,True,True,,,0.004237,0.009975,"{""ambiguous_runnable"": 1}"
+Prob127_lemmings1,True,both_pass,True,True,True,True,,,0.016961,0.018402,"{""syntax"": 4}"
+Prob128_fsm_ps2,True,both_pass,True,True,True,True,,,0.019765,0.005224,{}
+Prob129_ece241_2013_q8,True,both_pass,True,True,True,True,,,0.005866,0.006116,{}
+Prob130_circuit5,True,routed_only_pass,False,True,True,True,,,0.015152,0.016870,"{""logic"": 2}"
+Prob131_mt2015_q4,False,routed_only_pass,False,True,False,True,B0,B0=tb_judge_assertion,0.011329,0.003826,{}
+Prob132_always_if2,True,both_pass,True,True,True,True,,,0.004951,0.004951,{}
+Prob133_2014_q3fsm,True,both_fail,False,False,True,True,,,0.029605,0.025343,"{""logic"": 4}"
+Prob134_2014_q3c,True,both_pass,True,True,True,True,,,0.008912,0.019757,"{""syntax"": 4}"
+Prob135_m2014_q6b,True,both_pass,True,True,True,True,,,0.005140,0.014659,"{""logic"": 1}"
+Prob136_m2014_q6,True,both_pass,True,True,True,True,,,0.016885,0.013289,"{""logic"": 1}"
+Prob137_fsm_serial,True,both_pass,True,True,True,True,,,0.016968,0.017003,"{""logic"": 1}"
+Prob138_2012_q2fsm,False,both_pass,True,True,False,True,B0,B0=tb_judge_assertion,0.012778,0.004835,{}
+Prob139_2013_q2bfsm,True,mage_only_pass,True,False,True,True,,,0.024929,0.031298,"{""syntax"": 4}"
+Prob140_fsm_hdlc,True,mage_only_pass,True,False,True,True,,,0.027230,0.029831,"{""syntax"": 4}"
+Prob141_count_clock,False,both_fail,False,False,False,False,B0;B1,B0=tb_generator_json_decode;B1=tb_generator_json_decode,0.020095,0.020111,{}
+Prob142_lemmings2,True,both_pass,True,True,True,True,,,0.027470,0.022491,"{""logic"": 1}"
+Prob143_fsm_onehot,False,both_pass,True,True,False,True,B0,B0=tb_judge_assertion,0.019968,0.031492,"{""ambiguous_runnable"": 4}"
+Prob144_conwaylife,True,both_pass,True,True,True,True,,,0.012333,0.007064,{}
+Prob145_circuit8,True,both_fail,False,False,True,True,,,0.021422,0.016893,"{""syntax"": 4}"
+Prob146_fsm_serialdata,True,both_pass,True,True,True,True,,,0.023476,0.006711,{}
+Prob147_circuit10,True,both_fail,False,False,True,True,,,0.027137,0.020280,"{""logic"": 4}"
+Prob148_2013_q2afsm,True,both_pass,True,True,True,True,,,0.011308,0.022247,"{""syntax"": 4}"
+Prob149_ece241_2013_q4,True,both_fail,False,False,True,True,,,0.036013,0.028481,"{""syntax"": 4}"
+Prob150_review2015_fsmonehot,False,both_fail,False,False,False,False,B0;B1,B0=tb_generator_json_decode;B1=tb_generator_json_decode,0.020391,0.020392,{}
+Prob151_review2015_fsm,True,mage_only_pass,True,False,True,True,,,0.026711,0.029046,"{""logic"": 4}"
+Prob152_lemmings3,False,mage_only_pass,True,False,True,False,B1,B1=tb_generator_json_decode,0.027033,0.020144,{}
+Prob153_gshare,False,both_fail,False,False,False,False,B0;B1,B0=tb_generator_json_decode;B1=tb_generator_json_decode,0.020386,0.020385,{}
+Prob154_fsm_ps2data,True,both_pass,True,True,True,True,,,0.019201,0.005915,{}
+Prob155_lemmings4,False,both_fail,False,False,False,False,B0;B1,B0=tb_generator_json_decode;B1=tb_generator_json_decode,0.020779,0.020778,{}
+Prob156_review2015_fancytimer,False,both_fail,False,False,False,True,B0,B0=tb_judge_assertion,0.021429,0.036348,"{""syntax"": 4}"

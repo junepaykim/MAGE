@@ -1,0 +1,72 @@
+{
+  "stage": "pilot_c5",
+  "filter_instance": "^(Prob011_norgate|Prob093_ece241_2014_q3|Prob119_fsm3|Prob151_review2015_fsm)$",
+  "rtl_max_candidates": 5,
+  "task_ids": [
+    "Prob011_norgate",
+    "Prob093_ece241_2014_q3",
+    "Prob119_fsm3",
+    "Prob151_review2015_fsm"
+  ],
+  "valid_task_ids": [
+    "Prob011_norgate",
+    "Prob093_ece241_2014_q3",
+    "Prob119_fsm3",
+    "Prob151_review2015_fsm"
+  ],
+  "invalid_tasks": [],
+  "arm_stats": {
+    "b0": {
+      "label": "B0 MAGE baseline",
+      "run_identifier": "gpt54nano_v2_b0_mage_t085_n1",
+      "tasks_completed": 4,
+      "pass_count": 2,
+      "aggregate_pass_rate": 0.5,
+      "pass_at_1": 0.5,
+      "compile_success_rate": 1.0,
+      "simulation_success_rate": 0.5,
+      "input_tokens": 125606,
+      "output_tokens": 38102,
+      "estimated_cost": 0.072748,
+      "runtime_seconds": 219.085765,
+      "output_path": "/home/joonp/projects/26-sp/ece228/MAGE/output_gpt54nano_v2_b0_mage_t085_n1_pilot_c5_c5",
+      "log_path": "/home/joonp/projects/26-sp/ece228/MAGE/log_gpt54nano_v2_b0_mage_t085_n1_pilot_c5_c5"
+    },
+    "b1": {
+      "label": "B1 Proposed routed",
+      "run_identifier": "gpt54nano_v2_b1_routed_t085_n1",
+      "tasks_completed": 4,
+      "pass_count": 2,
+      "aggregate_pass_rate": 0.5,
+      "pass_at_1": 0.5,
+      "compile_success_rate": 1.0,
+      "simulation_success_rate": 0.5,
+      "input_tokens": 129812,
+      "output_tokens": 31586,
+      "estimated_cost": 0.065445,
+      "runtime_seconds": 159.960072,
+      "output_path": "/home/joonp/projects/26-sp/ece228/MAGE/output_gpt54nano_v2_b1_routed_t085_n1_pilot_c5_c5",
+      "log_path": "/home/joonp/projects/26-sp/ece228/MAGE/log_gpt54nano_v2_b1_routed_t085_n1_pilot_c5_c5"
+    }
+  },
+  "paired_outcome_counts": {
+    "both_pass": 2,
+    "both_fail": 2
+  },
+  "b1_route_totals": {
+    "route_counts": {
+      "syntax": 8,
+      "logic": 3
+    },
+    "successful_repairs_by_route": {},
+    "failed_repairs_by_route": {
+      "syntax": 6,
+      "logic": 2
+    },
+    "failure_class_counts": {
+      "syntax": 6,
+      "logic": 2
+    }
+  },
+  "paired_csv": "/home/joonp/projects/26-sp/ece228/MAGE/experiment_results/gpt54nano_mage_vs_routed_20260530_004834/pilot_c5_paired_results.csv"
+}

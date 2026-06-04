@@ -1,0 +1,5 @@
+task_id,valid_pair,b0_pass,b1_pass,outcome,b0_input_tokens,b0_output_tokens,b0_cost,b0_runtime,b1_input_tokens,b1_output_tokens,b1_cost,b1_runtime,b1_route_counts,b1_successful_repairs_by_route,b1_failed_repairs_by_route
+Prob011_norgate,True,True,True,both_pass,4940,2051,0.003552,0:00:14.619579,5028,1992,0.003496,0:00:14.003893,{},{},{}
+Prob093_ece241_2014_q3,True,False,False,both_fail,45340,14208,0.026828,0:01:12.624913,38169,11426,0.021916,0:01:00.388355,"{""logic"": 4}",{},"{""logic"": 3}"
+Prob119_fsm3,True,True,True,both_pass,12068,5758,0.009611,0:00:37.820613,6374,3419,0.005549,0:00:22.159251,{},{},{}
+Prob151_review2015_fsm,True,False,True,routed_only_pass,58996,13943,0.029228,0:01:09.592264,47699,12175,0.024759,0:00:58.775591,"{""logic"": 4}",{},"{""logic"": 3}"

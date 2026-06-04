@@ -1,0 +1,25 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.4-nano",
+  "type_benchmark": "verilog_eval_v2",
+  "path_benchmark": "./verilog-eval",
+  "temperature": 0.85,
+  "top_p": 0.95,
+  "n": 1,
+  "max_token": 4096,
+  "rtl_selected_candidates": 1,
+  "editor_max_trials": 3,
+  "sim_max_retry": 2,
+  "use_golden_tb_in_mage": true,
+  "key_cfg_path": "./key.cfg",
+  "ideal_budget_usd": 9.0,
+  "hard_stop_usd": 12.0,
+  "candidate_budgets": [
+    5,
+    3,
+    1
+  ],
+  "max_parallel_requests": 50,
+  "artifact_suffix": "20260603_182054",
+  "reports_dir": "experiment_results/agentic_routing_rerun_20260603_182054"
+}

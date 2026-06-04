@@ -234,6 +234,45 @@ def classify_debug_failure(
         return "logic"
     return "ambiguous_runnable"
 
+
+def parse_json_object_from_response(content: str) -> Dict[str, Any]:
+    try:
+        parsed = json.loads(content, strict=False)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    candidates: List[str] = []
+    fence_match = re.search(
+        r"```(?:json)?\s*(.*?)```", content, flags=re.IGNORECASE | re.DOTALL
+    )
+    if fence_match:
+        candidates.append(fence_match.group(1).strip())
+
+    first_brace = content.find("{")
+    last_brace = content.rfind("}")
+    if first_brace != -1 and last_brace > first_brace:
+        candidates.append(content[first_brace : last_brace + 1])
+
+    decoder = json.JSONDecoder(strict=False)
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate, strict=False)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        for match in re.finditer(r"{", candidate):
+            try:
+                parsed, _ = decoder.raw_decode(candidate[match.start() :])
+            except json.JSONDecodeError:
+                continue
+            if isinstance(parsed, dict):
+                return parsed
+
+    raise json.JSONDecodeError("No JSON object found in model response", content, 0)
+
 ACTION_OUTPUT_PROMPT = r"""
 Output after running given action:
 <action_output>
@@ -408,9 +447,9 @@ class RTLEditor:
         if self.repair_route in ("logic", "ambiguous_runnable"):
             if failure_class in ("syntax", "interface"):
                 return (
-                    True,
-                    f"logic repair introduced {failure_class} blocker, pivoting route",
-                    failure_class,
+                    False,
+                    f"logic repair introduced {failure_class} blocker",
+                    route_after,
                 )
             if sim_mismatch_cnt > 0:
                 if (
@@ -699,7 +738,7 @@ class RTLEditor:
         ]
 
     def parse_output(self, response: ChatResponse) -> RTLEditorStepOutput:
-        output_json_obj: Dict = json.loads(response.message.content, strict=False)
+        output_json_obj = parse_json_object_from_response(response.message.content or "")
         action_input = output_json_obj["action_input"]
         command = action_input["command"]
 
@@ -708,6 +747,34 @@ class RTLEditor:
             reasoning=output_json_obj["reasoning"],
             action_input=ActionInput(command=command, args=args),
         )
+
+    def record_parse_failure(
+        self, model_output: str, exc: Exception
+    ) -> Dict[str, Any]:
+        route_before = self.repair_route
+        action_output = {
+            "is_action_executed": False,
+            "acceptance_reason": "editor output was not valid action JSON",
+            "is_syntax_pass": None,
+            "is_sim_pass": False,
+            "failure_class": self.last_failure_class,
+            "sim_mismatch_cnt": self.last_mismatch_cnt,
+            "error_msg": (
+                f"Could not parse editor action JSON: {exc}. "
+                f"Model output excerpt: {model_output[:LOG_EXCERPT_MAX_CHARS]}"
+            ),
+            "repair_route_before": route_before,
+            "repair_route_after": route_before,
+        }
+        self._append_debug_history(
+            action_name="parse_editor_output",
+            action_output=action_output,
+            old_content="",
+            new_content=model_output,
+            route_before=route_before,
+            route_after=route_before,
+        )
+        return action_output
 
     def run_action(self, action_input: ActionInput) -> Dict[str, Any]:
         logger.info(f"Action input: {action_input}")
@@ -775,8 +842,13 @@ class RTLEditor:
                 + self.get_order_prompt_messages()
             )
             new_contents = [response.message]
-            action_input = self.parse_output(response).action_input
-            action_output = self.run_action(action_input)
+            try:
+                action_input = self.parse_output(response).action_input
+                action_output = self.run_action(action_input)
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+                action_output = self.record_parse_failure(
+                    response.message.content or "", exc
+                )
             if self.is_done:
                 is_pass = True
                 break
